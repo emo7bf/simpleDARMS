@@ -1,0 +1,5 @@
+Description, Quantity, Capacity, EffectivenessFile
+AIT,1,150, input/AIT.csv
+WTMD,1,10000, input/WTMD.csv
+XRAY,1,10000, input/XRAY.csv
+PATDOWN,1,240, input/PATDOWN.csv

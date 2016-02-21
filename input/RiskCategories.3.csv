@@ -1,0 +1,4 @@
+RiskCategory, Probability
+SELECTEE,0.45
+UNKNOWN,0.35
+LOWRISK1,0.2

@@ -1,0 +1,2 @@
+LIB_FILE=lib\cplex125.dll
+#LIB_FILE=libcplex125_64.so

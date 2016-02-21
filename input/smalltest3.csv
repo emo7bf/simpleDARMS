@@ -1,0 +1,4 @@
+Description, FlightType, DepartureTime, DefUncov, DefCov, AttUncov, AttCov, SELECTEE, UNKNOWN
+Flight1, DOMESTIC, 04:58,-9,0,9,0,60,530
+Flight2, DOMESTIC, 04:01,-6,0,6,0,40,600
+Flight3, DOMESTIC, 04:18,-2,0,2,0,180,420

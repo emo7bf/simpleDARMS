@@ -1,0 +1,10 @@
+Window Number, m Variables, b Variables, Decision Variables
+1, 0, 8, 12
+2, 8, 8, 24
+3, 16, 8, 32
+4, 24, 8, 36
+
+Total # Decision Variables, 104
+Sample Number, 1034
+
+Runtime, 8.554
