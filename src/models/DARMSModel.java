@@ -42,7 +42,7 @@ public class DARMSModel {
 	private PayoffStructure payoffStructure;
 	private ArrayList<PassengerDistribution> xiDistribution;
 	private ArrayList<PassengerDistribution> violDistribution;
-	private int uncertain;
+	public int uncertain;
 	private int numberSamples;
 	public boolean aggregate;
 	public boolean hasOverflow;
@@ -51,7 +51,7 @@ public class DARMSModel {
 	private int numViolProb;
 	public double beta;
 	public double eps;
-	public int decVariables;
+	private int decVariables;
 
 	public DARMSModel(List<Flight> flights, 
 			Map<RiskCategory, Double> adversaryDistribution,
@@ -103,6 +103,7 @@ public class DARMSModel {
 		if( numberSamples2==0){
 			this.numberSamples = calcNumberSamples(epsilon, beta);
 		} else {
+			calcNumberSamples(epsilon, beta);
 			this.numberSamples = numberSamples2;
 		}
 		this.hasOverflow = overflow;
@@ -453,21 +454,11 @@ public class DARMSModel {
 		int numWindows = this.shiftDuration / this.timeGranularity;
 		int numRisk = this.adversaryDistribution.keySet().size();
 		int numFlights = this.flights.size();
-		int numTeams = this.screeningOperations.size();
+		int numTeams = this.screeningOperations.size();		
 		
-		// nw is number of b variables + number of s variables + number of m variables
-		int nw = numFlights * numRisk * numWindows * numTeams + numRisk + numFlights * numRisk * ( (numWindows) * (numWindows - 1)/2 ) * numTeams;
-		
-		this.decVariables = nw;
-		
-		if( this.decisionRule.equals("linear") ){
-			nw = numFlights * numRisk * numWindows * numTeams + numRisk + numFlights * numRisk * ( (numWindows) * (numWindows - 1)/2 ) * numTeams;
-		} else if( this.decisionRule.equals("constant") ){
-			nw = numFlights * numRisk * numWindows * numTeams + numRisk;
-		}
-		
+		int nw = 50;
 		int N = nw;
-		System.out.println("Number of decision variables: "+nw);
+		int N1 = 0;
 		while( true ){
 			double sum = 0;
 			for( int i = 0 ; i < nw ; ++i ){
@@ -484,9 +475,74 @@ public class DARMSModel {
 			}
 			
 			if( sum <= beta ){
-				return N;
+				N1 = N;
+				break;
 			}
 			N = N + 1;
 		}
+	
+		
+		
+		
+		
+		int N2 = 0;
+		nw = 80;
+		N = nw;
+		while( true ){
+			double sum = 0;
+			for( int i = 0 ; i < nw ; ++i ){
+				BigDecimal a = new BigDecimal( BigIntegerMath.binomial( N, i ));
+				double b = Math.pow(epsilon, i);
+				double c = Math.pow((1 - epsilon), (N-i));
+				BigDecimal f = new BigDecimal( b* c );
+				double d = a.multiply(f).doubleValue();
+				sum += d;
+				if( sum > beta ){
+					break;
+				}
+				
+			}
+			
+			if( sum <= beta ){
+				N2 = N;
+				break;
+			}
+			N = N + 1;
+		}
+
+
+		
+		
+		
+		
+		
+		// nw is number of b variables + number of s variables + number of m variables
+		nw = numFlights * numRisk * numWindows * numTeams + numRisk + numFlights * numRisk * ( (numWindows) * (numWindows - 1)/2 ) * numTeams;
+		
+		if( this.decisionRule.equals("linear") ){
+			nw = numFlights * numRisk * numWindows * numTeams + numRisk + numFlights * numRisk * ( (numWindows) * (numWindows - 1)/2 ) * numTeams;
+		} else if( this.decisionRule.equals("constant") ){
+			nw = numFlights * numRisk * numWindows * numTeams + numRisk;
+		}
+		
+		this.decVariables = nw;
+		
+		
+		double m = (N2*1.0 - N1) / (80-50);
+		N = (int) ((nw - 50)*m + N1);
+		System.out.println( "Number of Decision Varibales: " + nw);
+		
+		return N;
+		
+		}
+
+	public int getDecVariables() {
+		// TODO Auto-generated method stub
+		return this.decVariables;
+	}
+	
+	public void setDecVariables(int i) {
+		// TODO Auto-generated method stub
+		this.decVariables = i;
 	}
 }

@@ -13,6 +13,10 @@ public class ExampleDARMS {
 	public static void main(String[] args) {
 
 		try {
+			
+			double epsilon = Double.parseDouble( args[0] );
+			int numFlights1 = Integer.parseInt( args[1] );
+			
 			String cplexFile = "CplexConfig";
 			DARMSHelper.loadLibrariesCplex(cplexFile); 
 			boolean verbose = true;
@@ -48,10 +52,12 @@ public class ExampleDARMS {
 				DARMSOutput output = new DARMSOutput(outputFile);
 				double defenderPayoff = 0;
 
-				DARMSModel model = DARMSModelBuilder.buildModel(inputFile,verbose, 0);
+				DARMSModel model = DARMSModelBuilder.buildModel(inputFile,verbose, 0, epsilon, numFlights1);
+				
+				double runtime = 0;
 				
 				if( model.decisionRule.equals( "constant" ) ){
-					MarginalSolverconst solver = new MarginalSolverconst(model,
+					DARMSMarginalSolver solver = new DARMSMarginalSolver(model,
 							zeroSum, decomposed, model.flightByFlight(), false);
 					
 					if (verbose) {
@@ -64,16 +70,20 @@ public class ExampleDARMS {
 					
 					System.out.println("seed = " + model.seed);
 					solver.solve();
+					
+					runtime = (System.currentTimeMillis() - start) / 1000.0;
+					
 					solver.calculateViolationProbability();
 
 					if (verbose) {
 
 						String fname = "NumberDecisionVariables.csv";
+						solver.writeNumberDecisionVariables(fname, runtime);
 
 						double rt = (System.currentTimeMillis() - start) / 1000.0;
 
-						solver.writeProblem("DARMS"+kk+".lp");
-						solver.writeSolution("DARMS.sol");
+						// solver.writeProblem("DARMS"+kk+".lp");
+						// solver.writeSolution("DARMS.sol");
 
 						System.out.println("Solving DARMS model... Completed");
 
@@ -129,7 +139,6 @@ public class ExampleDARMS {
 					int numCategories = model.getAdversaryDistribution().keySet()
 							.size();
 					int numTimeWindows = model.getTimeWindows().size();
-					double runtime = (System.currentTimeMillis() - start) / 1000.0;
 
 					System.out.println(inputFile + " " + flightByFlight + " "
 							+ zeroSum + " " + decomposed + " " + numFlights + " "
@@ -162,11 +171,14 @@ public class ExampleDARMS {
 					
 					System.out.println("seed = " + model.seed);
 					solver.solve();
+					runtime = (System.currentTimeMillis() - start) / 1000.0;
+					
 					solver.calculateViolationProbability();
 					
 					if (verbose) {
 
 						String fname = "NumberDecisionVariables.csv";
+						solver.writeNumberDecisionVariables(fname, runtime);
 
 						double rt = (System.currentTimeMillis() - start) / 1000.0;
 
@@ -227,7 +239,7 @@ public class ExampleDARMS {
 					int numCategories = model.getAdversaryDistribution().keySet()
 							.size();
 					int numTimeWindows = model.getTimeWindows().size();
-					double runtime = (System.currentTimeMillis() - start) / 1000.0;
+					
 
 					System.out.println(inputFile + " " + flightByFlight + " "
 							+ zeroSum + " " + decomposed + " " + numFlights + " "

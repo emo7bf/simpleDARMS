@@ -1,4 +1,5 @@
 RiskCategory, Payoff, Probability, Utility
-SELECTEE, -6.0, 0.65, -3.9000000000000004
-UNKNOWN, -5.214285714285714, 0.35, -1.825
-,, Defender Utility:,-5.7250000000000005
+SELECTEE, 1.0E8, 0.45, 4.5E7
+UNKNOWN, 1.0E8, 0.35, 3.5E7
+LOWRISK1, 1.0E8, 0.2, 2.0E7
+,, Defender Utility:,1.0E8

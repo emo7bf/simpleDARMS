@@ -3,6 +3,7 @@ package utilities;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +20,7 @@ import models.ScreeningResource;
 
 public class DARMSModelBuilder {
 	public static boolean verb;
-	public static DARMSModel buildModel(String inputFilename, boolean verbose, int thisTestNumber) throws Exception{
+	public static DARMSModel buildModel(String inputFilename, boolean verbose, int thisTestNumber, double epsilon2, int numFlights) throws Exception{
 		verb = verbose;
 		
 		BufferedReader reader = new BufferedReader(new FileReader(inputFilename));
@@ -129,7 +130,8 @@ public class DARMSModelBuilder {
 				beta = Double.parseDouble(arg[1]);
 			}
 			else if(arg[0].equals("EPSILON")){
-				epsilon = Double.parseDouble(arg[1]);
+				// epsilon = Double.parseDouble(arg[1]);
+				epsilon = epsilon2;
 			}
 			else if(arg[0].equals("SEED")){
 				seed = Integer.parseInt(arg[1]);
@@ -144,7 +146,7 @@ public class DARMSModelBuilder {
 		
 		Map<RiskCategory, Double> adversaryDistribution = getAdversaryDistribution(riskCategoryFilename);
 		
-		List<Flight> flightList = getFlights(adversaryDistribution.keySet(), flightListFilename);
+		List<Flight> flightList = getFlights(adversaryDistribution.keySet(), flightListFilename, numFlights);
 		
 		Map<ScreeningResource, Integer> screeningResources = getScreeningResources(adversaryDistribution.keySet(), attackMethods, screeningResourcesFilename);
 		
@@ -226,7 +228,7 @@ public class DARMSModelBuilder {
 		return adversaryDistribution;
 	}
 	
-	private static List<Flight> getFlights(Set<RiskCategory> riskCategories, String filename) throws Exception{
+	private static List<Flight> getFlights(Set<RiskCategory> riskCategories, String filename, int numFlights) throws Exception{
 		List<Flight> flightList = new ArrayList<Flight>();
 		
 		BufferedReader reader = new BufferedReader(new FileReader(filename));
@@ -305,7 +307,8 @@ public class DARMSModelBuilder {
 			
 			flightList.add(f);
 		}
-				
+		flightList = flightList.subList(0, numFlights);
+		
 		return flightList;
 	}
 	

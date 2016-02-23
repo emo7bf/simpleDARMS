@@ -1,10 +1,13 @@
-Window Number, m Variables, b Variables, Decision Variables
-1, 0, 8, 12
-2, 8, 8, 24
-3, 16, 8, 32
-4, 24, 8, 36
+Seed, -440570075
+Decision Rule, linear
+Number of flights, 10
+Epsilon, 0.1
+Beta, 0.01
+Number Decision Variables, 603
+Number of Samples, 6955
+Number of Constraints, 0
+Amount Uncertainty, 2
+Experimental Epsilon, 1.0
+Objective Value, 1.0E8
 
-Total # Decision Variables, 104
-Sample Number, 1034
-
-Runtime, 8.554
+Runtime, 11.979

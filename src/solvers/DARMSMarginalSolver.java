@@ -160,9 +160,11 @@ public class DARMSMarginalSolver{
 		// cplex.setOut(null);
 		
 		this.currentTimeWindows = timeWindows;
-		
+		System.out.println("Initializing Variables...");
 		initVars();
+		System.out.println("Initializing Constraints...");
 		initConstraints();
+		System.out.println("Initializing Objective...");
 		initObjective();
 	}
 	
@@ -257,9 +259,11 @@ public class DARMSMarginalSolver{
 	
 	private void initConstraints() throws IloException{
 		constraints = new ArrayList<IloRange>();
-		
+		System.out.println("Initializing Probability Constraints...");
 		sumDefenderScreeningActionRow();
+		System.out.println("Initializing Throughput Constraints...");
 		sumDefenderScreeningThroughputRow();
+		System.out.println("Initializing Utility Constraints...");
 		sumDefenderCoverageRow();
 		
 		IloRange[] c = new IloRange[constraints.size()];
@@ -308,8 +312,6 @@ public class DARMSMarginalSolver{
 				
 				loadProblem(timeWindow);
 				
-				writeProblem("DARMS.lp");
-				
 				cplex.solve();
 				
 				if(!cplex.isPrimalFeasible()){
@@ -339,10 +341,10 @@ public class DARMSMarginalSolver{
 		}
 		else{
 			loadProblem(allTimeWindows);
-			writeProblem("DARMS.lp");
+			// writeProblem("DARMS.lp");
 			cplex.solve();
 			
-			writeSolution("DARMS2.sol");
+			// writeSolution("DARMS2.sol");
 			
 			if(!cplex.isPrimalFeasible()){
 				writeProblem("Infeasible.lp");
@@ -364,6 +366,10 @@ public class DARMSMarginalSolver{
 	
 	private void sumDefenderCoverageRow() throws IloException{
 		int counter = 0;
+		IloNumExpr expr = cplex.constant(0);
+		IloNumExpr expr2 = cplex.constant(0);
+		IloNumExpr expr3 = cplex.constant(0);
+		
 		for(int t : currentTimeWindows){
 			List<Integer> subListTimeWindows = currentTimeWindows.subList(0, counter);
 			counter = counter + 1;
@@ -374,9 +380,9 @@ public class DARMSMarginalSolver{
 							
 							// ADDED
 							
-							IloNumExpr expr = cplex.constant(0);
+							expr = expr3;
 							for(ScreeningOperation o : model.getScreeningOperations()){
-								IloNumExpr expr2 = cplex.constant(0);
+								expr2 = expr3;
 								for(int i : subListTimeWindows){
 									// sum ( m * xi ) over all prev time window
 									expr2 = cplex.sum(expr2, cplex.prod(mMap.get(t).get(i).get(f).get(c).get(o), xi.get(i, f, c)));
@@ -401,137 +407,40 @@ public class DARMSMarginalSolver{
 		}
 	}
 	
-//	private void setZeroSumDefenderPayoffRow() throws IloException{
-//		for(int t : currentTimeWindows){
-//			for(RiskCategory c : model.getAdversaryDistribution().keySet()){
-//				for(Flight f : model.getFlights(t)){
-//					for(AttackMethod m : model.getAttackMethods()){
-//						//IloNumExpr expr = cplex.sum(dMap.get(c), cplex.prod(xMap.get(t).get(c).get(f).get(m), f.getDefUncovPayoff() - f.getDefCovPayoff()));
-//						IloNumExpr expr = cplex.sum(dMap.get(c), cplex.prod(xMap.get(t).get(c).get(f).get(m), payoffStructure.defUncov(f) - payoffStructure.defCov(f)));
-//						
-//						//constraints.add(cplex.le(expr, f.getDefUncovPayoff(), "DC" + t + "C" + c.id() + "F" + f.id() + "M" + m.id()));
-//						constraints.add(cplex.le(expr, payoffStructure.defUncov(f), "DC" + t + "C" + c.id() + "F" + f.id() + "M" + m.id()));
-//					}
-//				}
-//			}
-//		}
-//	}
-	
-//	private void setGeneralSumDefenderPayoffRow() throws IloException{
-//		for(int t : currentTimeWindows){
-//			for(RiskCategory c : model.getAdversaryDistribution().keySet()){
-//				for(Flight f : model.getFlights(t)){
-//					for(AttackMethod m : model.getAttackMethods()){
-//						//IloNumExpr expr = cplex.sum(dMap.get(c), cplex.prod(xMap.get(t).get(c).get(f).get(m), f.getDefUncovPayoff() - f.getDefCovPayoff()));
-//						IloNumExpr expr = cplex.sum(dMap.get(c), cplex.prod(xMap.get(t).get(c).get(f).get(m), payoffStructure.defUncov(f) - payoffStructure.defCov(f)));
-//						
-//						expr = cplex.sum(expr, cplex.prod(aMap.get(t).get(c).get(f).get(m), MM));
-//						
-//						//constraints.add(cplex.le(expr, MM + f.getDefUncovPayoff(), "DC" + t + "C" + c.id() + "F" + f.id() + "M" + m.id()));
-//						constraints.add(cplex.le(expr, MM + payoffStructure.defUncov(f), "DC" + t + "C" + c.id() + "F" + f.id() + "M" + m.id()));
-//					}
-//				}
-//			}
-//		}
-//	}
-
-//	private void setStaticScreening() throws IloException{
-//		for(int t : currentTimeWindows){
-//			for(RiskCategory c : model.getAdversaryDistribution().keySet()){
-//				for(ScreeningOperation o : model.getScreeningOperations()){
-//					for(Flight f1 : model.getFlights(t)){
-//						IloNumExpr expr1 = sMap.get(t).get(f1).get(c).get(o);
-//						
-//						for(Flight f2 : model.getFlights(t)){
-//							if(f2.id() - f1.id() == 1){
-//								IloNumExpr expr2 = cplex.prod(-1.0, sMap.get(t).get(f2).get(c).get(o));
-//								
-//								IloNumExpr expr = cplex.sum(expr1, expr2);
-//								
-//								constraints.add(cplex.eq(expr, 0.0, "T" + t + "C" + c.id() + "O" + o.getID() + "F" + f1.id() + "F" + f2.id()));
-//							}
-//						}
-//					}
-//				}
-//			}
-//		}
-//	}
-	
-//	private void setNaiveScreening() throws IloException{
-//		for(int t : currentTimeWindows){
-//			for(RiskCategory c : model.getAdversaryDistribution().keySet()){
-//				for(ScreeningOperation o : model.getScreeningOperations()){
-//					for(Flight f1 : model.getFlights(t)){
-//						IloNumExpr expr1 = sMap.get(t).get(f1).get(c).get(o);
-//						
-//						for(Flight f2 : model.getFlights(t)){
-//							if(f2.id() - f1.id() == 1){
-//								IloNumExpr expr2 = cplex.prod(-1.0, sMap.get(t).get(f2).get(c).get(o));
-//								
-//								IloNumExpr expr = cplex.sum(expr1, expr2);
-//								
-//								constraints.add(cplex.eq(expr, 0.0, "T" + t + "C" + c.id() + "O" + o.getID() + "F" + f1.id() + "F" + f2.id()));
-//							}
-//						}
-//					}
-//				}
-//			}
-//		}
-//		
-//		for(int t : currentTimeWindows){
-//			for(Flight f : model.getFlights(t)){
-//				for(ScreeningOperation o : model.getScreeningOperations()){
-//					for(RiskCategory c1 : model.getAdversaryDistribution().keySet()){
-//						IloNumExpr expr1 = sMap.get(t).get(f).get(c1).get(o);
-//						
-//						for(RiskCategory c2 : model.getAdversaryDistribution().keySet()){
-//							if(c2.id() - c1.id() == 1){
-//								IloNumExpr expr2 = cplex.prod(-1.0, sMap.get(t).get(f).get(c2).get(o));
-//								
-//								IloNumExpr expr = cplex.sum(expr1, expr2);
-//								
-//								constraints.add(cplex.eq(expr, 0.0, "T" + t + "F" + f.id() + "O" + o.getID() + "C" + c1.id() + "C" + c2.id()));
-//							}
-//						}
-//					}
-//				}
-//			}
-//		}
-//	}
-	
 	private void sumDefenderScreeningActionRow() throws IloException{
 		// ADDED: changed to set all slope intercepts' sums over teams to 1, and to set the sum of slopes = 0
 		Collections.sort( currentTimeWindows );
 		int counter = 0;
+		
+		IloNumExpr expr2 = cplex.constant(0);
+		IloNumExpr expr = cplex.constant(0);
+		IloNumExpr expr3 = cplex.constant(0);
+		
 		for(int t : currentTimeWindows){
-			List<Integer> subListTimeWindows = currentTimeWindows.subList(0, counter);
-			counter = counter + 1;
 			for(Flight f : model.getFlights(t)){
 				for(RiskCategory c : model.getAdversaryDistribution().keySet()){
-					IloNumExpr expr = cplex.constant(0);
+					expr = expr3;
 					for(ScreeningOperation o : model.getScreeningOperations()){
 						expr = cplex.sum(expr, bMap.get(t).get(f).get(c).get(o));
 					}
 						
-					for(int i : subListTimeWindows){
-						IloNumExpr expr2 = cplex.constant(0);
+					for(int i : currentTimeWindows.subList(0, counter)){
+						expr2 = expr3;
 						for(ScreeningOperation o2 : model.getScreeningOperations()){
 							expr2 = cplex.sum(expr2, mMap.get(t).get(i).get(f).get(c).get(o2));
 						}
-						constraints.add(cplex.eq(expr2, 0.0, "MSUMZEROt=" + t + "f=" + f.id() + "c=" + c.id() + "SUM"));
+						constraints.add(cplex.eq(expr2, 0.0, "MSUMZERO"));
 					}
-					constraints.add(cplex.eq(expr, 1.0, "BSUM1t=" + t + "f=" + f.id() + "c=" + c.id() + "SUM"));
+					constraints.add(cplex.eq(expr, 1.0, "BSUM1"));
 				}
 			}
+			counter = counter + 1;
 		}
 	
 		// ADDED: enforce screening strategy to be between 0 and 1
-		Map<ScreeningResource, Integer> screeningResources = model.getScreeningResources();
 		counter = 0;
 		// For all w
 		for(int t : currentTimeWindows){
-			List<Integer> subListTimeWindows = currentTimeWindows.subList(0, counter);
-			counter = counter + 1;
 			// For all possible xi
 			for( PassengerDistribution xi : xiDistribution ){
 				// For all flights
@@ -540,18 +449,19 @@ public class DARMSMarginalSolver{
 					for(RiskCategory c : model.getAdversaryDistribution().keySet()){
 						// For all teams
 						for(ScreeningOperation o : model.getScreeningOperations()){
-							IloNumExpr expr = cplex.constant(0);
-							for(int i : subListTimeWindows){
+							expr = cplex.constant(0);
+							for(int i : currentTimeWindows.subList(0, counter)){
 								expr = cplex.sum(expr, cplex.prod(mMap.get(t).get(i).get(f).get(c).get(o), xi.get(i, f, c)));
 							}
 							expr = cplex.sum(expr, bMap.get(t).get(f).get(c).get(o));
-							constraints.add(cplex.le(expr, 1, "LESSTHAN1_T" + t + "_XI" + xi.toString() + "_C" + c.id() + "_F" + f.id() + "_O" + o.toString()));
-							constraints.add(cplex.ge(expr, 0, "GREATERTHAN0_T" + t +"_XI" + xi.toString() + "_C" + c.id() + "_F" + f.id() + "_O" + o.toString()));
+							constraints.add(cplex.le(expr, 1, "LESSTHAN1_T"));
+							constraints.add(cplex.ge(expr, 0, "GREATERTHAN0_T"));
 							
 						}
 					}
 				}
 			}
+			counter = counter + 1;
 		}
 		
 		
@@ -566,13 +476,14 @@ public class DARMSMarginalSolver{
 		int counter1 = 0;		
 		int counter = 0;		
 		Map<ScreeningResource, Integer> screeningResources = model.getScreeningResources();
+		IloNumExpr expr = cplex.constant(0);
 
 		for(int t : currentTimeWindows){
 			List<Integer> subListTimeWindows = currentTimeWindows.subList(0, counter);
 			counter = counter + 1;
 			for( ScreeningResource r : screeningResources.keySet() ){
 				for( PassengerDistribution xi : xiDistribution ){
-					IloNumExpr expr = cplex.constant(0);
+					expr = cplex.constant(0);
 					for(Flight f : model.getFlights(t)){
 						for(RiskCategory c : model.getAdversaryDistribution().keySet()){
 							for(ScreeningOperation o : model.getScreeningOperations()){
@@ -837,52 +748,7 @@ public class DARMSMarginalSolver{
 				fw3.write(line);
 			}
 			fw3.close();
-			}
-		// Write Stats doc
-		
-		FileWriter fw4 = new FileWriter(new File("NumberDecisionVariables.csv"));
-		line = "Window Number, m Variables, b Variables, Decision Variables\n";
-		
-		int totalDec = 0;
-		
-		fw4.write(line);
-		
-		count = 0;
-		for( int t: allTimeWindows ){
-			
-			if( count == 0){
-				int firstRound = mSums.get(0) + bSums.get(0) + model.getScreeningResources().keySet().size();
-				int firstBasis = mSums.get(0) + bSums.get(0);
-				totalDec +=firstRound;
-				line = "1, " + mSums.get(0) + ", " + bSums.get(0) + ", " + firstRound + "\n";
-				fw4.write(line);
-				count++;
-			} else if( count == ( allTimeWindows.size() - 1 )){
-				int lastRound = mSums.get(count) + bSums.get(count) + model.getScreeningResources().keySet().size();
-				int lastBasis = mSums.get(count) + bSums.get(count);
-				totalDec +=lastRound;
-				line = (count + 1) + ", " + mSums.get(count) + ", " + bSums.get(count) + ", " + lastRound + "\n";
-				fw4.write(line);
-				count++;
-			} else {	
-				int currentRound = mSums.get(count) + bSums.get(count) + ( model.getScreeningResources().keySet().size() * 2 );
-				totalDec +=currentRound;
-				int currentBasis = mSums.get(count) + bSums.get(count);
-				line = (count + 1) + ", " + mSums.get(count) + ", " + bSums.get(count) + ", " + currentRound + "\n";
-				fw4.write(line);
-				count++;
-			}
-		}
-		
-		fw4.write("\n");
-		fw4.write("");
-		fw4.write("Total # Decision Variables, " + totalDec + "\n");
-		fw4.write("Sample Number, " + xiDistribution.size() + "\n");
-		fw4.write("\n");
-		fw4.write("Runtime, " + runtime + "\n");
-		
-		fw4.close();
-		
+			}	
 	}
 	
 	public Map<RiskCategory, Map<Integer, Map<Flight, AttackMethod>>> getAdversaryStrategies() throws IloException{
@@ -1173,48 +1039,37 @@ public class DARMSMarginalSolver{
 		}
 	}
 
-	public void writeNumberDecisionVariables(String fname, double runtime) throws IOException {
+	public void writeNumberDecisionVariables(String fname, double runtime) throws IOException, IloException {
+		System.out.println( fname );
 		FileWriter fw = new FileWriter(new File(fname));
-		String line = "Window Number, Decision Variables, Basis Size\n";
-		
-		int totalDec = 0;
-		
-		fw.write(line);
-		int firstRound = model.getFlights().size() * 1 + model.getScreeningResources().keySet().size();
-		int firstBasis = model.getFlights().size() * 1;
-		totalDec +=firstRound;
-		line = "1, " + firstRound + ", " + firstBasis + "\n";
-		fw.write(line);
-		
-		
-		for( int j = 1; j < model.getTimeWindows().size() - 1; j++ ){
-			int currentRound = model.getFlights().size() * (j + 1) + ( model.getScreeningResources().keySet().size() * 2 );
-			totalDec +=currentRound;
-			int currentBasis = model.getFlights().size() * (j + 1);
-			line = (j + 1) + ", " + currentRound + ", " + currentBasis + "\n";
-			fw.write(line);
-		}
-		
-		int lastRound = model.getFlights().size() * model.getTimeWindows().size() + model.getScreeningResources().keySet().size();
-		int lastBasis = model.getFlights().size() * model.getTimeWindows().size();
-		
-		totalDec +=lastRound;
-		
-		line = model.getTimeWindows().size() + ", " + lastRound + ", " + lastBasis + "\n";
-		fw.write(line);
-		fw.write("\n");
-		fw.write("");
 		
 		fw.write("Seed, " + model.seed + "\n");
 		fw.write("Decision Rule, " + model.decisionRule + "\n");
+		fw.write("Number of flights, " + model.getFlights().size() + "\n");
 		fw.write("Epsilon, " + model.eps + "\n");
 		fw.write("Beta, " + model.beta + "\n");
-		fw.write("Number Decision Variables, " + model.decVariables + "\n");
+		fw.write("Number Decision Variables, " + model.getDecVariables() + "\n");
 		fw.write("Number of Samples, " + xiDistribution.size() + "\n");
 		fw.write("Number of Constraints, " + cplex.getNrows() + "\n");
+		fw.write("Amount Uncertainty, " + model.uncertain + "\n");
 		fw.write("Experimental Epsilon, " + this.expEpsilon  + "\n");
+		fw.write("Objective Value, " + cplex.getObjValue() + "\n");
 		fw.write("\n");
 		fw.write("Runtime, " + runtime + "\n");
+		
+		System.out.println("Seed, " + model.seed + "\n");
+		System.out.println("Decision Rule, " + model.decisionRule + "\n");
+		System.out.println("Amount Uncertainty, " + model.uncertain + "\n");
+		System.out.println("Number of flights, " + model.getFlights().size() + "\n");
+		System.out.println("Epsilon, " + model.eps + "\n");
+		System.out.println("Beta, " + model.beta + "\n");
+		System.out.println("Number Decision Variables, " + model.getDecVariables() + "\n");
+		System.out.println("Number of Samples, " + xiDistribution.size() + "\n");
+		System.out.println("Number of Constraints, " + cplex.getNrows() + "\n");
+		System.out.println("Experimental Epsilon, " + this.expEpsilon  + "\n");
+		System.out.println("Objective Value, " + cplex.getObjValue() + "\n");
+		System.out.println("\n");
+		System.out.println("Runtime, " + runtime + "\n");
 		
 		fw.close();
 		
@@ -1227,6 +1082,7 @@ public class DARMSMarginalSolver{
 	
 	public double calculateViolationProbability() {
 		int numViolated = 0;
+		System.out.println( "Starting to calculate the violation probability...");
 		for( PassengerDistribution v : model.getViolDistribution() ){
 			boolean isViolated = false;
 			
@@ -1264,11 +1120,9 @@ public class DARMSMarginalSolver{
 								
 								// Multiply by payoff values and add the evaluated payoff value
 								val = val * (payoffStructure.defUncov(f) - payoffStructure.defCov(f)) + defenderPayoffs.get(c);
-								System.out.println( val + "<=" + payoffStructure.defUncov(f) );
 								
 								// If this value is greater, then this realization violates.
 								if ( val > payoffStructure.defUncov(f) ){
-									System.out.println( "VIOLATION");
 									isViolated = true;
 								}
 								
@@ -1301,10 +1155,8 @@ public class DARMSMarginalSolver{
 								}
 								// plus the current b
 								val = val + defenderScreeningStrategyb.get(t).get(f).get(c).get(o);
-								System.out.println( "0 <= " + val + " <= 1" );
 								// if this value is not a real probability...
 								if( (val > 1) || ( val < 0) ){
-									System.out.println("VIOLATED");
 									isViolated = true;
 								}
 							}
@@ -1337,12 +1189,10 @@ public class DARMSMarginalSolver{
 							}
 						}
 						double capacity = r.capacity() * screeningResources.get(r);
-						System.out.println( val + " <= " + capacity );
 						
 						
 						// note: I added this small error here
 						if( val > capacity + 0.0000000001 ){
-							System.out.println("VIOLATION");
 							isViolated = true;
 						}
 			
@@ -1356,6 +1206,7 @@ public class DARMSMarginalSolver{
 		
 		}
 		this.expEpsilon = ( numViolated* 1.0 ) / ( 1.0 * model.getViolDistribution().size() );
+		System.out.println( "Finished calculating the violation probability...");
 		return ( numViolated* 1.0 ) / ( 1.0 * model.getViolDistribution().size() );
 	}
 	
