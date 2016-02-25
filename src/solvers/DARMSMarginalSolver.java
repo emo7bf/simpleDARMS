@@ -18,16 +18,11 @@ import models.PayoffStructure;
 import models.RiskCategory;
 import models.ScreeningOperation;
 import models.ScreeningResource;
-import ilog.concert.IloException;
-import ilog.concert.IloNumExpr;
-import ilog.concert.IloNumVar;
-import ilog.concert.IloNumVarType;
-import ilog.concert.IloRange;
-import ilog.cplex.IloCplex;
+import ilog.concert.*;
+import ilog.cplex.*;
 
 public class DARMSMarginalSolver{
 	private DARMSModel model;
-	
 	private IloCplex cplex;
 	
 	private Map<RiskCategory, IloNumVar> dMap;
@@ -54,7 +49,7 @@ public class DARMSMarginalSolver{
 	
 	private List<IloRange> constraints;
 	
-	private static final int MM = 100000000;
+	private static final double MM = Double.MAX_VALUE;
 	
 	private List<Integer> allTimeWindows;
 	private List<Integer> currentTimeWindows;
@@ -69,6 +64,8 @@ public class DARMSMarginalSolver{
 	private boolean naive;
 
 	private double expEpsilon;
+
+	private double solverTime;
 	
 	public DARMSMarginalSolver(DARMSModel model, boolean zeroSum, boolean decomposed, boolean flightByFlight, boolean naive) throws Exception{
 		this.model = model;
@@ -155,8 +152,8 @@ public class DARMSMarginalSolver{
 		
 		cplex = new IloCplex();
 		cplex.setName("DARMS");
-		cplex.setParam(IloCplex.IntParam.RootAlg, 0);
-		// cplex.setParam(IloCplex.IntParam.BarCrossAlg, -1);
+		cplex.setParam(IloCplex.IntParam.RootAlg, 4);
+		cplex.setParam(IloCplex.IntParam.BarCrossAlg, -1);
 		// cplex.setOut(null);
 		
 		this.currentTimeWindows = timeWindows;
@@ -166,6 +163,7 @@ public class DARMSMarginalSolver{
 		initConstraints();
 		System.out.println("Initializing Objective...");
 		initObjective();
+		System.out.println("Begin Solving...");
 	}
 	
 	private void initVars() throws IloException{
@@ -265,10 +263,6 @@ public class DARMSMarginalSolver{
 		sumDefenderScreeningThroughputRow();
 		System.out.println("Initializing Utility Constraints...");
 		sumDefenderCoverageRow();
-		
-		IloRange[] c = new IloRange[constraints.size()];
-
-		cplex.add(constraints.toArray(c));
 	}
 	
 	private void initObjective() throws IloException{
@@ -342,7 +336,12 @@ public class DARMSMarginalSolver{
 		else{
 			loadProblem(allTimeWindows);
 			// writeProblem("DARMS.lp");
+			
+			
+			long start2 = System.currentTimeMillis();
 			cplex.solve();
+			double solverRuntime = (System.currentTimeMillis() - start2) / 1000.0;
+			this.solverTime = solverRuntime;
 			
 			// writeSolution("DARMS2.sol");
 			
@@ -398,8 +397,8 @@ public class DARMSMarginalSolver{
 							}
 							
 							expr = cplex.sum(dMap.get(c), cplex.prod(expr, payoffStructure.defUncov(f) - payoffStructure.defCov(f)));
-							//constraints.add(cplex.le(expr, f.getDefUncovPayoff(), "DC" + t + "C" + c.id() + "F" + f.id() + "M" + m.id()));
-							constraints.add(cplex.le(expr, payoffStructure.defUncov(f), "DEFCOVt=" + t + "c=" + c.id() + "f=" + f.id() + "m=" + m.id() +"xi=" + xi.toString() ));
+							//cplex.add(cplex.le(expr, f.getDefUncovPayoff(), "DC" + t + "C" + c.id() + "F" + f.id() + "M" + m.id()));
+							cplex.add(cplex.le(expr, payoffStructure.defUncov(f), "DEFCOVt=" + t + "c=" + c.id() + "f=" + f.id() + "m=" + m.id() +"xi=" + xi.toString() ));
 						}
 					}
 				}
@@ -429,9 +428,9 @@ public class DARMSMarginalSolver{
 						for(ScreeningOperation o2 : model.getScreeningOperations()){
 							expr2 = cplex.sum(expr2, mMap.get(t).get(i).get(f).get(c).get(o2));
 						}
-						constraints.add(cplex.eq(expr2, 0.0, "MSUMZERO"));
+						cplex.add(cplex.eq(expr2, 0.0, "MSUMZERO"));
 					}
-					constraints.add(cplex.eq(expr, 1.0, "BSUM1"));
+					cplex.add(cplex.eq(expr, 1.0, "BSUM1"));
 				}
 			}
 			counter = counter + 1;
@@ -454,8 +453,8 @@ public class DARMSMarginalSolver{
 								expr = cplex.sum(expr, cplex.prod(mMap.get(t).get(i).get(f).get(c).get(o), xi.get(i, f, c)));
 							}
 							expr = cplex.sum(expr, bMap.get(t).get(f).get(c).get(o));
-							constraints.add(cplex.le(expr, 1, "LESSTHAN1_T"));
-							constraints.add(cplex.ge(expr, 0, "GREATERTHAN0_T"));
+							cplex.add(cplex.le(expr, 1, "LESSTHAN1_T"));
+							cplex.add(cplex.ge(expr, 0, "GREATERTHAN0_T"));
 							
 						}
 					}
@@ -515,7 +514,7 @@ public class DARMSMarginalSolver{
 						}
 					}	
 					double capacity = r.capacity() * screeningResources.get(r);	
-					constraints.add(cplex.le(expr, capacity, "THRUt=" + t + "r=" + r.id() +"xi=" + xi.toString()));
+					cplex.add(cplex.le(expr, capacity, "THRUt=" + t + "r=" + r.id() +"xi=" + xi.toString()));
 				}
 			}	
 			counter1 = counter1 + 1;
@@ -1045,7 +1044,6 @@ public class DARMSMarginalSolver{
 		
 		fw.write("Seed, " + model.seed + "\n");
 		fw.write("Decision Rule, " + model.decisionRule + "\n");
-		fw.write("Number of flights, " + model.getFlights().size() + "\n");
 		fw.write("Epsilon, " + model.eps + "\n");
 		fw.write("Beta, " + model.beta + "\n");
 		fw.write("Number Decision Variables, " + model.getDecVariables() + "\n");
@@ -1055,7 +1053,13 @@ public class DARMSMarginalSolver{
 		fw.write("Experimental Epsilon, " + this.expEpsilon  + "\n");
 		fw.write("Objective Value, " + cplex.getObjValue() + "\n");
 		fw.write("\n");
-		fw.write("Runtime, " + runtime + "\n");
+		fw.write("Total Runtime, " + runtime + "\n");
+		fw.write("Solver Runtime, " + this.solverTime + "\n");
+		fw.write("\n");
+		fw.write("Number of flights, " + model.getFlights().size() + "\n");
+		fw.write("Number of risk levels, " + model.getAdversaryDistribution().keySet().size() + "\n");
+		fw.write("Number of teams, " + model.getScreeningOperations().size() + "\n");
+		fw.write("Number of time windows, " + model.getTimeWindows().size() + "\n");
 		
 		System.out.println("Seed, " + model.seed + "\n");
 		System.out.println("Decision Rule, " + model.decisionRule + "\n");
@@ -1113,6 +1117,7 @@ public class DARMSMarginalSolver{
 									// Times effectiveness
 									// QUESTION: why is effectiveness negative?
 									val2 = val2 * o.effectiveness(c, m);
+									System.out.println(o + " " + o.effectiveness(c, m));
 
 									// This product is added to the sum over all teams
 									val = val + val2;
@@ -1122,7 +1127,9 @@ public class DARMSMarginalSolver{
 								val = val * (payoffStructure.defUncov(f) - payoffStructure.defCov(f)) + defenderPayoffs.get(c);
 								
 								// If this value is greater, then this realization violates.
-								if ( val > payoffStructure.defUncov(f) ){
+								System.out.println(val + " < " + payoffStructure.defUncov(f));
+								if ( val > payoffStructure.defUncov(f) + 0.00000001){
+									System.out.println("VIOLATION");
 									isViolated = true;
 								}
 								
@@ -1156,7 +1163,9 @@ public class DARMSMarginalSolver{
 								// plus the current b
 								val = val + defenderScreeningStrategyb.get(t).get(f).get(c).get(o);
 								// if this value is not a real probability...
-								if( (val > 1) || ( val < 0) ){
+								System.out.println("0 < "+ val + " < 1");
+								if( (val > 1.000001) || ( val < -0.00000001) ){
+									System.out.println("VIOLATION");
 									isViolated = true;
 								}
 							}
@@ -1190,16 +1199,16 @@ public class DARMSMarginalSolver{
 						}
 						double capacity = r.capacity() * screeningResources.get(r);
 						
-						
+						System.out.println(val + " < " + capacity);
 						// note: I added this small error here
-						if( val > capacity + 0.0000000001 ){
+						if( val > capacity + 0.000000001 ){
+							System.out.println("VIOLATION");
 							isViolated = true;
 						}
 			
 					}
 				}
 
-			
 			if( isViolated ){
 				numViolated++;
 			}

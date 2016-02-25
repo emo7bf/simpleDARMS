@@ -1,13 +1,18 @@
-Seed, -440570075
+Seed, 2057458134
 Decision Rule, linear
-Number of flights, 10
-Epsilon, 0.1
+Epsilon, 0.01
 Beta, 0.01
-Number Decision Variables, 603
-Number of Samples, 6955
-Number of Constraints, 0
-Amount Uncertainty, 2
-Experimental Epsilon, 1.0
-Objective Value, 1.0E8
+Number Decision Variables, 36003
+Number of Samples, 100
+Number of Constraints, 894000
+Amount Uncertainty, 50
+Experimental Epsilon, 0.28
+Objective Value, -2.250000000003254
 
-Runtime, 11.979
+Total Runtime, 27.51
+Solver Runtime, 17.603
+
+Number of flights, 20
+Number of risk levels, 3
+Number of teams, 2
+Number of time windows, 24

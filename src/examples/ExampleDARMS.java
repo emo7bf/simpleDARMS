@@ -36,8 +36,6 @@ public class ExampleDARMS {
 				
 				String outputFile = "OutputDARMS.txt";
 
-				long start = System.currentTimeMillis();
-
 				if (verbose) {
 					System.out.println("Building DARMS model... Started");
 				}
@@ -69,6 +67,7 @@ public class ExampleDARMS {
 					
 					
 					System.out.println("seed = " + model.seed);
+					long start = System.currentTimeMillis();
 					solver.solve();
 					
 					runtime = (System.currentTimeMillis() - start) / 1000.0;
@@ -168,8 +167,8 @@ public class ExampleDARMS {
 					System.out.println("Saving output file: " + "smallpassdist");
 					// solver.writeTemporalPassengerDistribution("./output/smallpassdist" +kk + ".csv");
 					
-					
 					System.out.println("seed = " + model.seed);
+					long start = System.currentTimeMillis();
 					solver.solve();
 					runtime = (System.currentTimeMillis() - start) / 1000.0;
 					
@@ -182,8 +181,8 @@ public class ExampleDARMS {
 
 						double rt = (System.currentTimeMillis() - start) / 1000.0;
 
-						solver.writeProblem("DARMS"+kk+".lp");
-						solver.writeSolution("DARMS.sol");
+						// solver.writeProblem("DARMS"+kk+".lp");
+						// solver.writeSolution("DARMS.sol");
 
 						System.out.println("Solving DARMS model... Completed");
 
@@ -201,7 +200,7 @@ public class ExampleDARMS {
 
 						// System.out.println("Saving output file: " + fname);
 						// solver.writeAdversaryStrategies(fname);
-
+     
 						aa = output.adversaryPayoffsFile().split(".csv");
 						fname = aa[0] + i + ".csv";
 
@@ -236,8 +235,7 @@ public class ExampleDARMS {
 					
 					boolean flightByFlight = model.flightByFlight();
 					int numFlights = model.getFlights().size();
-					int numCategories = model.getAdversaryDistribution().keySet()
-							.size();
+					int numCategories = model.getAdversaryDistribution().keySet().size();
 					int numTimeWindows = model.getTimeWindows().size();
 					
 

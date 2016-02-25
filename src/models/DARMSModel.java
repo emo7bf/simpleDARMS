@@ -147,10 +147,10 @@ public class DARMSModel {
 				
 				for(RiskCategory c : passList){
 					
-					int a = -190 + dice.nextInt(this.uncertain*2 + 1) - this.uncertain;
-					int b =  50 + dice.nextInt(this.uncertain*2 + 1) - this.uncertain;
-					int d = -190 + dice.nextInt(this.uncertain*2 + 1) - this.uncertain;
-					int e =  50 + dice.nextInt(this.uncertain*2 + 1) - this.uncertain;
+					double a = -190 + dice.nextDouble()*this.uncertain*2 - this.uncertain;
+					double b =  50 + dice.nextDouble()*this.uncertain*2 - this.uncertain;
+					double d = -190 + dice.nextDouble()*this.uncertain*2 - this.uncertain;
+					double e =  50 + dice.nextDouble()*this.uncertain*2 - this.uncertain;
 					
 					// System.out.println(a+", "+b+", "+d+", "+e);
 					NormalDistribution domesticDistribution = new NormalDistribution(a,b);
@@ -390,7 +390,7 @@ public class DARMSModel {
 		
 		this.xiDistribution = new ArrayList<PassengerDistribution>();
 		
-		for(int count = 0; count < numberSamples; count++){
+		for(int count = numViolProb; count < numViolProb+numberSamples; count++){
 		
 			Map<Integer, Map<Flight, Map<RiskCategory, Integer>>> dist = new HashMap<Integer, Map<Flight, Map<RiskCategory, Integer>>>();
 		
@@ -401,7 +401,7 @@ public class DARMSModel {
 					
 					List<Map<Integer, Map<RiskCategory, Integer>>> temporalPassengerDistributionList = f.getTemporalPassengerDistributionList();
 					
-					Map<Integer, Map<RiskCategory, Integer>> temporalDistribution = temporalPassengerDistributionList.get(count + numViolProb);
+					Map<Integer, Map<RiskCategory, Integer>> temporalDistribution = temporalPassengerDistributionList.get(count);
 					
 					dist.get(t).put(f, new HashMap<RiskCategory, Integer>());
 					
